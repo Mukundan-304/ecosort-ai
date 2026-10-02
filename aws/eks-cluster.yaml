@@ -1,0 +1,13 @@
+# eksctl create cluster -f aws/eks-cluster.yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata: {name: ecosort-eks, region: ap-south-1}      # Mumbai
+vpc: {nat: {gateway: Disable}}                          # nodes use public subnets -> no NAT gateway bill
+iam: {withOIDC: true}
+managedNodeGroups:
+  - name: workers
+    instanceType: t3.large        # 8 GB RAM: the detector model needs ~2-3 GB
+    minSize: 1
+    maxSize: 3
+    desiredCapacity: 1
+    volumeSize: 40

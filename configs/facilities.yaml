@@ -1,0 +1,8 @@
+facilities:
+  - {name: GreenLoop MRF,   lat: 12.97, lon: 77.59, accepts: [plastic_pet, plastic_hdpe, paper, metal], capacity_kg: 50000, load_kg: 41000, recovery_rate: 0.88, cost_per_kg: 2}
+  - {name: Cullet Glassworks, lat: 13.05, lon: 77.65, accepts: [glass], capacity_kg: 20000, load_kg: 6000, recovery_rate: 0.95, cost_per_kg: 1}
+  - {name: BioGas Composter, lat: 12.90, lon: 77.50, accepts: [organic], capacity_kg: 30000, load_kg: 12000, recovery_rate: 0.80, cost_per_kg: 1.5}
+  - {name: CertE E-Waste Recycler, lat: 13.10, lon: 77.55, accepts: [ewaste], capacity_kg: 8000, load_kg: 2000, recovery_rate: 0.92, cost_per_kg: 4}
+  - {name: Metro Metals Scrap, lat: 12.85, lon: 77.70, accepts: [metal], capacity_kg: 15000, load_kg: 3000, recovery_rate: 0.97, cost_per_kg: 1}
+  - {name: CleanFuel Waste-to-Energy Plant, lat: 13.00, lon: 77.80, accepts: [residual], capacity_kg: 60000, load_kg: 20000, recovery_rate: 0.35, cost_per_kg: 3}
+  - {name: ReWear Textile Recycler, lat: 12.92, lon: 77.62, accepts: [textile], capacity_kg: 6000, load_kg: 1500, recovery_rate: 0.70, cost_per_kg: 2}

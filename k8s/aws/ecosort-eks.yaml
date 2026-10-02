@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ecosort-ai, labels: {app: ecosort-ai}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: ecosort-ai}}
+  strategy: {type: RollingUpdate, rollingUpdate: {maxUnavailable: 0, maxSurge: 1}}
+  template:
+    metadata: {labels: {app: ecosort-ai}}
+    spec:
+      containers:
+      - name: app
+        image: IMAGE_PLACEHOLDER                # Jenkins substitutes <account>.dkr.ecr.<region>.amazonaws.com/ecosort-ai:<build>
+        ports: [{containerPort: 8501}]
+        resources: {requests: {cpu: 500m, memory: 1536Mi}, limits: {cpu: "2", memory: 3Gi}}
+        startupProbe: {httpGet: {path: /_stcore/health, port: 8501}, periodSeconds: 10, failureThreshold: 30}
+        readinessProbe: {httpGet: {path: /_stcore/health, port: 8501}, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /_stcore/health, port: 8501}, periodSeconds: 20, failureThreshold: 3}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecosort-ai
+  annotations: {service.beta.kubernetes.io/aws-load-balancer-type: nlb}
+spec: {type: LoadBalancer, selector: {app: ecosort-ai}, ports: [{port: 80, targetPort: 8501}]}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: ecosort-ai}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: ecosort-ai}
+  minReplicas: 1
+  maxReplicas: 3
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}}]

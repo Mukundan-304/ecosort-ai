@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Jenkins on EC2 for EcoSort AI (Docker, kubectl, AWS CLI; IAM role for ECR + EKS, no stored AWS keys)
+Parameters:
+  VpcId: {Type: 'AWS::EC2::VPC::Id'}
+  SubnetId: {Type: 'AWS::EC2::Subnet::Id', Description: Public subnet}
+  MyIpCidr: {Type: String, Description: 'Your public IP as x.x.x.x/32 (only this IP can open the Jenkins UI)'}
+  RepoUrl: {Type: String, Description: 'Public Git URL of this project (used to build the Jenkins image)'}
+  InstanceType: {Type: String, Default: t3.large}
+  LatestAmi: {Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>', Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'}
+Resources:
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: {Version: '2012-10-17', Statement: [{Effect: Allow, Principal: {Service: ec2.amazonaws.com}, Action: 'sts:AssumeRole'}]}
+      ManagedPolicyArns: ['arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser', 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore']
+      Policies:
+        - PolicyName: eks-describe
+          PolicyDocument: {Version: '2012-10-17', Statement: [{Effect: Allow, Action: ['eks:DescribeCluster', 'sts:GetCallerIdentity'], Resource: '*'}]}
+  Profile: {Type: AWS::IAM::InstanceProfile, Properties: {Roles: [!Ref Role]}}
+  Sg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Jenkins UI from my IP only
+      VpcId: !Ref VpcId
+      SecurityGroupIngress: [{IpProtocol: tcp, FromPort: 8080, ToPort: 8080, CidrIp: !Ref MyIpCidr}]
+  Jenkins:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmi
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref Profile
+      BlockDeviceMappings: [{DeviceName: /dev/xvda, Ebs: {VolumeSize: 60, VolumeType: gp3}}]
+      NetworkInterfaces: [{DeviceIndex: '0', AssociatePublicIpAddress: true, SubnetId: !Ref SubnetId, GroupSet: [!Ref Sg]}]
+      Tags: [{Key: Name, Value: ecosort-jenkins}]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          dnf install -y docker git
+          systemctl enable --now docker
+          git clone ${RepoUrl} /opt/ecosort
+          docker build -t ecosort-jenkins /opt/ecosort/jenkins
+          docker run -d --name jenkins --restart unless-stopped --network host -u root -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock ecosort-jenkins
+Outputs:
+  JenkinsUrl: {Value: !Sub 'http://${Jenkins.PublicIp}:8080'}
+  InstanceId: {Value: !Ref Jenkins}
+  JenkinsRoleArn: {Value: !GetAtt Role.Arn}

@@ -1,0 +1,10 @@
+-r requirements.txt
+torch
+torchvision
+scikit-learn
+mlflow
+dvc[s3]
+ultralytics
+pytest
+ruff
+matplotlib

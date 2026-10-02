@@ -1,0 +1,29 @@
+pipeline {
+  agent any
+  options { timestamps(); disableConcurrentBuilds() }
+  environment {
+    IMAGE = "YOUR_DOCKERHUB_USER/ecosort-ai"      // <- change
+    TAG = "${env.BUILD_NUMBER}"
+    ECOSORT_BACKEND = "demo"                       // CI tests must not download the 600 MB model
+  }
+  stages {
+    stage('Setup')      { steps { sh 'python3 -m venv .venv && . .venv/bin/activate && pip install -q -r requirements.txt pytest ruff' } }
+    stage('Lint')       { steps { sh '. .venv/bin/activate && ruff check src app training --select E9,F63,F7,F82' } }
+    stage('Unit tests') { steps { sh '. .venv/bin/activate && pytest -q' } }
+    stage('Data & model (DVC)') {
+      when { expression { fileExists('.dvc/config') } }          // runs only once a DVC remote is configured
+      steps { sh '. .venv/bin/activate && pip install -q -r requirements-train.txt && dvc pull && dvc repro' }
+    }
+    stage('Docker build') { steps { sh 'docker build -t $IMAGE:$TAG -t $IMAGE:latest .' } }
+    stage('Push') {
+      steps { withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+        sh 'echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin && docker push $IMAGE:$TAG && docker push $IMAGE:latest' } }
+    }
+    stage('Deploy to Kubernetes') {
+      when { expression { (env.GIT_BRANCH ?: 'main').endsWith('main') } }
+      steps { withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+        sh 'kubectl apply -f k8s/ && kubectl set image deployment/ecosort-ai app=$IMAGE:$TAG && kubectl rollout status deployment/ecosort-ai --timeout=900s && kubectl get pods,svc' } }
+    }
+  }
+  post { failure { echo 'Pipeline failed - nothing was rolled out' } }
+}

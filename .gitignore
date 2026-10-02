@@ -1,0 +1,8 @@
+data/raw
+data/processed
+models/candidate
+models/classifier.pt
+models/classes.json
+models/calibration.json
+models/model_card.json
+mlruns

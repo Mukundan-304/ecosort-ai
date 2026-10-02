@@ -1,0 +1,28 @@
+data: {train: 0.7, val: 0.15, seed: 42, min_per_class: 30}
+train:
+  archs: [mobilenet_v3_large, efficientnet_v2_s, convnext_tiny]
+  img_size: 224
+  batch: 32
+  num_workers: 2
+  head_epochs: 6
+  ft_epochs: 15
+  lr_head: 0.001
+  lr_ft: {mobilenet_v3_large: 0.0001, efficientnet_v2_s: 0.00005, convnext_tiny: 0.00002}   # small LRs; head gets 5x
+  unfreeze_blocks: {mobilenet_v3_large: 4, efficientnet_v2_s: 3, convnext_tiny: 2}
+  label_smoothing: 0.1
+  hard_neg_boost: 3.0
+  patience: 3
+  tie_margin: 0.005     # within 0.5pt val macro-F1 -> pick the faster model
+  seed: 42
+evaluate:
+  min_macro_f1: 0.80
+  max_ece: 0.08
+  max_confusable_rate: 0.10
+  min_pair_support: 20
+  regression_tolerance: 0.0
+watch_pairs:           # visually similar groups monitored on the test set
+  - {name: paper-metal,        a: [paper, newspaper],                         b: [aluminum can, metal tin can]}
+  - {name: cardboard-paper,    a: [cardboard box],                            b: [paper, newspaper]}
+  - {name: plastic-glass,      a: [plastic bottle, plastic container],        b: [glass bottle]}
+  - {name: ewaste-packaging,   a: [electronic device, battery],               b: [plastic bag, styrofoam]}
+  - {name: metal-plastic,      a: [aluminum can, metal tin can],              b: [plastic bottle, plastic container]}

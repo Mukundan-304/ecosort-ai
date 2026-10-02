@@ -1,0 +1,13 @@
+# source-dataset class folder -> EcoSort class (must be a key in src/ecosort/knowledge.py ITEMS).
+# NOTE: coarse mappings (e.g. TrashNet 'plastic' -> plastic container) blur sub-classes; refine with TACO / own crops for finer labels.
+paper: paper
+cardboard: cardboard box
+plastic: plastic container
+glass: glass bottle
+metal: metal tin can
+"Food Organics": food waste
+Vegetation: leaves
+battery: battery
+e-waste: electronic device
+trash: plastic bag
+Textile Trash: cloth

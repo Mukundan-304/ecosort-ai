@@ -1,0 +1,23 @@
+stages:
+  prepare:
+    cmd: python training/prepare.py
+    deps: [training/prepare.py, data/raw, data/feedback, configs/label_map.yaml]
+    params: [data]
+    outs: [data/processed]
+    metrics: [reports/data_quality.json: {cache: false}]
+  train:
+    cmd: python training/train.py
+    deps: [training/train.py, src/ecosort/preprocess.py, src/ecosort/evalutils.py, data/processed]
+    params: [train]
+    outs: [models/candidate]
+    metrics: [reports/benchmark.json: {cache: false}]
+  evaluate:            # gate: fails (non-zero exit) if the candidate is not good enough -> nothing is promoted/deployed
+    cmd: python training/evaluate.py
+    deps: [training/evaluate.py, models/candidate, data/processed/test]
+    params: [evaluate, watch_pairs]
+    outs: [reports/confusion_matrix.png]
+    metrics: [metrics.json: {cache: false}, reports/gate.json: {cache: false}]
+  promote:
+    cmd: python training/promote.py
+    deps: [training/promote.py, models/candidate, reports/gate.json]
+    outs: [models/classifier.pt, models/classes.json, models/calibration.json, models/model_card.json]
