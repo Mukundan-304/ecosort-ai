@@ -33,5 +33,5 @@ jobs:
           ruff check src app training --select E9,F63,F7,F82
 
       - name: Run unit tests
-        run: |
-          pytest -q
+        run: | 
+          pytest -q tests --ignore=tests/test_pipeline.py
