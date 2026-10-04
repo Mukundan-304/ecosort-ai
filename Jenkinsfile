@@ -12,7 +12,7 @@ pipeline {
   stages {
     stage('Setup')      { steps { sh 'python3 -m venv .venv && . .venv/bin/activate && pip install -q -r requirements.txt pytest ruff' } }
     stage('Lint')       { steps { sh '. .venv/bin/activate && ruff check src app training --select E9,F63,F7,F82' } }
-    stage('Unit tests') { steps { sh '. .venv/bin/activate && pytest -q' } }
+    stage('Unit tests') { steps { sh '. .venv/bin/activate && pytest -q tests' } }
     stage('Data & model (DVC)') {
       when { expression { fileExists('.dvc/config') } }      // only once a DVC remote exists (give the Jenkins role S3 access if it is an S3 remote)
       steps { sh '. .venv/bin/activate && pip install -q -r requirements-train.txt && dvc pull && dvc repro' }
